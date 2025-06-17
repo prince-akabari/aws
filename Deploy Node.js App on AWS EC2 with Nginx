@@ -1,49 +1,65 @@
-A to Z: Deploy Node.js App on AWS EC2 with Nginx (No Port in URL)
+Perfect! Since you've already followed most of the steps, here's your **✅ Final A-to-Z Checklist** combining everything — including using **PM2**, **Nginx**, and **your EC2 Public DNS** (so no port is required).
 
-Prerequisites:
-- AWS EC2 instance (Amazon Linux 2 or 2023)
-- Node.js app listening on port 8080
-- PEM SSH key
+---
 
-Step 1: Launch EC2 and Set Up Security Group
-- Inbound Rules:
-  SSH  | TCP | 22   | Your IP
-  HTTP | TCP | 80   | 0.0.0.0/0
+## ✅ Final Deployment Steps: Node.js App on EC2 with NGINX + PM2 + Public DNS
 
-Step 2: Connect to EC2
-ssh -i your-key.pem ec2-user@<your-ec2-public-ip>
+---
 
-Step 3: Install Node.js and Git
-curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
-sudo yum install -y nodejs git
+### ✅ Prerequisites Recap
 
-Step 4: Clone and Run App
-git clone https://github.com/your-username/your-repo.git
-cd your-repo
-npm install
+* EC2 (Amazon Linux 2 or 2023)
+* Node.js app listening on port `8080`
+* SSH access via `.pem` key
+* NGINX installed
+* Security Group open on **port 80 (HTTP)**
 
-Ensure your app listens on 0.0.0.0:
-app.listen(8080, '0.0.0.0', () => console.log("Running"));
+---
 
-Start app:
-node app.js
+### 🔁 If Not Done Yet: PM2 Setup
 
-Step 5: Install Nginx
-# Amazon Linux 2023
-sudo dnf install nginx -y
-# Or Amazon Linux 2
-sudo yum install nginx -y
+Install PM2 globally:
 
-Start and enable:
-sudo systemctl start nginx
-sudo systemctl enable nginx
+```bash
+sudo npm install -g pm2
+```
 
-Step 6: Configure Nginx
+Start your app with PM2:
+
+```bash
+cd /home/ec2-user/your-app-folder
+pm2 start app.js --name my-app
+```
+
+Save current process list:
+
+```bash
+pm2 save
+```
+
+Enable auto-start on boot:
+
+```bash
+pm2 startup
+# Copy and run the command it outputs (it will look like: sudo env PATH=...)
+```
+
+---
+
+### ⚙️ NGINX Config (Make Sure It's Set)
+
+Edit NGINX config:
+
+```bash
 sudo nano /etc/nginx/nginx.conf
+```
 
+Make sure your `http` block contains this:
+
+```nginx
 server {
     listen 80;
-    server_name _;
+    server_name ec2-3-110-177-229.ap-south-1.compute.amazonaws.com;
 
     location / {
         proxy_pass http://localhost:8080;
@@ -54,19 +70,50 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 }
+```
 
-restart ng:
-sudo nginx -t   # test config
+Then reload NGINX:
+
+```bash
+sudo nginx -t
 sudo systemctl reload nginx
+```
 
+---
 
-Step 7: Access App
-http://<your-ec2-public-ip>
+### 📌 Make Sure Your Node.js App Listens on `0.0.0.0`:
 
-Optional: Use PM2
-sudo npm install -g pm2
-pm2 start app.js
-pm2 save
-pm2 startup
+```js
+app.listen(8080, '0.0.0.0', () => {
+  console.log("Server running on port 8080");
+});
+```
 
+---
 
+### 🌐 Final Test URL
+
+Now open:
+
+```
+http://ec2-3-110-177-229.ap-south-1.compute.amazonaws.com
+```
+
+✅ It should load your app with **no port** in the URL.
+
+---
+
+### ✅ Optional (but recommended)
+
+* Attach an **Elastic IP** to keep your EC2 Public DNS from changing.
+* Or buy a domain and map it to the IP using a DNS A record.
+
+---
+
+Let me know if you want to:
+
+* Set up **HTTPS** using Let’s Encrypt (free SSL)
+* Map a custom domain (e.g., `www.example.com`)
+* Set up **auto-deploy from GitHub** (CI/CD)
+
+I’ll help you with the next step!
