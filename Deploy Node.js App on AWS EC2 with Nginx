@@ -55,9 +55,10 @@ server {
     }
 }
 
-Restart Nginx:
-sudo nginx -t
-sudo systemctl restart nginx
+restart ng:
+sudo nginx -t   # test config
+sudo systemctl reload nginx
+
 
 Step 7: Access App
 http://<your-ec2-public-ip>
@@ -68,6 +69,4 @@ pm2 start app.js
 pm2 save
 pm2 startup
 
-Optional: HTTPS with Let's Encrypt (ask for guide)
 
-Done!
