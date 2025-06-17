@@ -1,0 +1,73 @@
+A to Z: Deploy Node.js App on AWS EC2 with Nginx (No Port in URL)
+
+Prerequisites:
+- AWS EC2 instance (Amazon Linux 2 or 2023)
+- Node.js app listening on port 8080
+- PEM SSH key
+
+Step 1: Launch EC2 and Set Up Security Group
+- Inbound Rules:
+  SSH  | TCP | 22   | Your IP
+  HTTP | TCP | 80   | 0.0.0.0/0
+
+Step 2: Connect to EC2
+ssh -i your-key.pem ec2-user@<your-ec2-public-ip>
+
+Step 3: Install Node.js and Git
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo yum install -y nodejs git
+
+Step 4: Clone and Run App
+git clone https://github.com/your-username/your-repo.git
+cd your-repo
+npm install
+
+Ensure your app listens on 0.0.0.0:
+app.listen(8080, '0.0.0.0', () => console.log("Running"));
+
+Start app:
+node app.js
+
+Step 5: Install Nginx
+# Amazon Linux 2023
+sudo dnf install nginx -y
+# Or Amazon Linux 2
+sudo yum install nginx -y
+
+Start and enable:
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+Step 6: Configure Nginx
+sudo nano /etc/nginx/nginx.conf
+
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+
+Restart Nginx:
+sudo nginx -t
+sudo systemctl restart nginx
+
+Step 7: Access App
+http://<your-ec2-public-ip>
+
+Optional: Use PM2
+sudo npm install -g pm2
+pm2 start app.js
+pm2 save
+pm2 startup
+
+Optional: HTTPS with Let's Encrypt (ask for guide)
+
+Done!
